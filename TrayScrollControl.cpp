@@ -1,7 +1,9 @@
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <iostream>
 #include <print>
 #include <hidusage.h>
+#include <shellapi.h>
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "shell32.lib")
@@ -20,7 +22,7 @@ static bool CheckIfCursorIsInTrayIconBounds(HWND hWnd) {
 		.cbSize = sizeof(NOTIFYICONIDENTIFIER),
 		.hWnd = nid.hWnd,
 		.uID = nid.uID,
-		.guidItem = GUID_NULL,
+		.guidItem = {0, 0, 0, {0,0,0,0,0,0,0,0}},
 	};
 
 	POINT ptCursor;
@@ -57,6 +59,23 @@ static bool CheckIfCursorIsInTrayIconBounds(HWND hWnd) {
 	}
 }
 
+static void ShowTrayMenu(HWND hWnd) {
+	POINT pt;
+	GetCursorPos(&pt);
+
+	HMENU hMenu = CreatePopupMenu();
+	AppendMenuW(hMenu, MF_STRING, 1, L"Exit");
+
+	SetForegroundWindow(hWnd); // Required for menu to disappear correctly
+
+	int cmd = TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hWnd, nullptr);
+	DestroyMenu(hMenu);
+
+	if (cmd == 1) {
+		PostMessageW(hWnd, WM_CLOSE, 0, 0);
+	}
+}
+
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	CheckIfCursorIsInTrayIconBounds(hWnd);
 
@@ -78,6 +97,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	} break;
 
 	case WM_TRAYICON: {
+		if (lParam == WM_RBUTTONUP) {
+			ShowTrayMenu(hWnd);
+		}
 		// handle clicks/menu if you want
 	} break;
 

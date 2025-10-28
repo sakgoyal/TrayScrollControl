@@ -9,3 +9,9 @@ bounding box and manually check when the mouse is scrolling inside that RECT.
 
 
 It has a context menu to exit the program as an example. 
+
+## Compiling
+```powershell
+clang++ -std=c++23 TrayScrollControl.cpp
+```
+

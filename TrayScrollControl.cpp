@@ -1,8 +1,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <cguid.h>
+#include <hidusage.h>
 #include <iostream>
 #include <print>
-#include <hidusage.h>
 #include <shellapi.h>
 
 #pragma comment(lib, "user32.lib")
@@ -11,7 +12,6 @@
 using std::cerr;
 using std::println;
 
-constexpr LPCWSTR szWindowClass = L"TRAYICONSCROLL";
 constexpr UINT WM_TRAYICON = WM_USER + 1;
 
 static NOTIFYICONDATAW nid = {};
@@ -22,7 +22,7 @@ static bool CheckIfCursorIsInTrayIconBounds(HWND hWnd) {
 		.cbSize = sizeof(NOTIFYICONIDENTIFIER),
 		.hWnd = nid.hWnd,
 		.uID = nid.uID,
-		.guidItem = {0, 0, 0, {0,0,0,0,0,0,0,0}},
+		.guidItem = GUID_NULL,
 	};
 
 	POINT ptCursor;
@@ -83,8 +83,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	case WM_INPUT: {
 		UINT dwSize = sizeof(RAWINPUT);
 		RAWINPUT raw{};
-		if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &raw, &dwSize,
-							sizeof(RAWINPUTHEADER)) == dwSize) {
+		if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &raw, &dwSize, sizeof(RAWINPUTHEADER)) == dwSize) {
 			if (raw.header.dwType == RIM_TYPEMOUSE) {
 				USHORT flags = raw.data.mouse.usButtonFlags;
 				if (flags & RI_MOUSE_WHEEL) {
@@ -100,7 +99,6 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		if (lParam == WM_RBUTTONUP) {
 			ShowTrayMenu(hWnd);
 		}
-		// handle clicks/menu if you want
 	} break;
 
 	case WM_DESTROY:
@@ -115,6 +113,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 }
 
 int main() {
+	constexpr LPCWSTR szWindowClass = L"TRAYICONSCROLL";
 	HINSTANCE hInstance = GetModuleHandleW(nullptr);
 
 	WNDCLASSEXW wcex = {

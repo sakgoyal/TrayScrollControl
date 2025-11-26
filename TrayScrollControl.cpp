@@ -1,6 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
+#define UNICODE
 #include <Windows.h>
-#include <cguid.h>
 #include <hidusage.h>
 #include <iostream>
 #include <print>
@@ -13,7 +13,6 @@ using std::cerr;
 using std::println;
 
 constexpr UINT WM_TRAYICON = WM_USER + 1;
-
 static NOTIFYICONDATAW nid = {};
 static bool bIsListeningInput = false;
 
@@ -22,7 +21,7 @@ static bool CheckIfCursorIsInTrayIconBounds(HWND hWnd) {
 		.cbSize = sizeof(NOTIFYICONIDENTIFIER),
 		.hWnd = nid.hWnd,
 		.uID = nid.uID,
-		.guidItem = GUID_NULL,
+		.guidItem = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } },
 	};
 
 	POINT ptCursor;
@@ -64,7 +63,7 @@ static void ShowTrayMenu(HWND hWnd) {
 	GetCursorPos(&pt);
 
 	HMENU hMenu = CreatePopupMenu();
-	AppendMenuW(hMenu, MF_STRING, 1, L"Exit");
+	AppendMenu(hMenu, MF_STRING, 1, L"Exit");
 
 	SetForegroundWindow(hWnd); // Required for menu to disappear correctly
 
@@ -72,7 +71,7 @@ static void ShowTrayMenu(HWND hWnd) {
 	DestroyMenu(hMenu);
 
 	if (cmd == 1) {
-		PostMessageW(hWnd, WM_CLOSE, 0, 0);
+		PostMessage(hWnd, WM_CLOSE, 0, 0);
 	}
 }
 
@@ -114,21 +113,21 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
 int main() {
 	constexpr LPCWSTR szWindowClass = L"TRAYICONSCROLL";
-	HINSTANCE hInstance = GetModuleHandleW(nullptr);
+	HINSTANCE hInstance = GetModuleHandle(nullptr);
 
-	WNDCLASSEXW wcex = {
-		.cbSize = sizeof(WNDCLASSEXW),
+	WNDCLASSEX wcex = {
+		.cbSize = sizeof(WNDCLASSEX),
 		.lpfnWndProc = WndProc,
 		.hInstance = hInstance,
 		.lpszClassName = szWindowClass,
 	};
 
-	if (!RegisterClassExW(&wcex)) {
+	if (!RegisterClassEx(&wcex)) {
 		println(cerr, "Failed to register window class. Error: {}", GetLastError());
 		return 1;
 	}
 
-	HWND hWnd = CreateWindowExW(0, szWindowClass, nullptr, 0, 0, 0, 0, 0, nullptr, nullptr, hInstance, nullptr);
+	HWND hWnd = CreateWindowEx(0, szWindowClass, nullptr, 0, 0, 0, 0, 0, nullptr, nullptr, hInstance, nullptr);
 	if (!hWnd) {
 		println(cerr, "Failed to create window. Error: {}", GetLastError());
 		return 2;
@@ -144,15 +143,15 @@ int main() {
 		.szTip = L"Scroll Tray Icon",
 	};
 
-	if (!Shell_NotifyIconW(NIM_ADD, &nid)) {
+	if (!Shell_NotifyIcon(NIM_ADD, &nid)) {
 		println(cerr, "Failed to add tray icon.");
 		return 3;
 	}
 
 	MSG msg = {};
-	while (GetMessageW(&msg, nullptr, 0, 0)) {
+	while (GetMessage(&msg, nullptr, 0, 0)) {
 		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
+		DispatchMessage(&msg);
 	}
 	return int(msg.wParam);
 }
